@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Kin-Ball Trainer — entraîne-toi et améliore tes performances.">
+  <meta name="theme-color" content="#fbf8f0">
+  <title>Kin-Ball Trainer</title>
+
+  <!-- Thème appliqué avant le premier affichage (évite le flash clair/sombre) -->
+  <script>
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem('knt-theme'); } catch (e) {}
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+
+  <!-- Typographies -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: 'var(--bg)',
+            surface: 'var(--surface)',
+            surface2: 'var(--surface-2)',
+            ink: 'var(--text)',
+            soft: 'var(--text-soft)',
+            line: 'var(--border)',
+            court: 'var(--court)',
+            courtdeep: 'var(--court-deep)',
+            sun: 'var(--sun)',
+            night: 'var(--night)',
+            night2: 'var(--night-2)',
+            onnight: 'var(--on-night)',
+            onnightsoft: 'var(--on-night-soft)',
+            onaccent: 'var(--on-accent)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* ---------- COULEURS : MODE CLAIR ---------- */
+    :root {
+      --bg: #fbf8f0;
+      --surface: #ffffff;
+      --surface-2: #f3eee2;
+      --text: #172235;
+      --text-soft: #566275;
+      --border: #e2ddd3;
+      --court: #118fca;
+      --court-deep: #0b6a98;
+      --sun: #f4c52d;
+      --night: #172235;
+      --night-2: #22304a;
+      --on-night: #f5f0e5;
+      --on-night-soft: rgba(245, 240, 229, .68);
+      --on-accent: #0d1626;
+      --tip-bg: #fdf5d8;
+      --tip-border: #ecd27a;
+      --tip-text: #5b4300;
+      --warn-bg: #fdecec;
+      --warn-border: #f3b9b9;
+      --warn-text: #7a1414;
+      --halo: transparent;
+      --shadow: 0 1px 2px rgba(23, 34, 53, .06), 0 10px 28px -14px rgba(23, 34, 53, .2);
+      color-scheme: light;
+    }
+
+    /* ---------- COULEURS : MODE SOMBRE ---------- */
+    :root[data-theme="dark"] {
+      --bg: #0c1320;
+      --surface: #151f31;
+      --surface-2: #1c2940;
+      --text: #f2ede2;
+      --text-soft: #a6b0c0;
+      --border: #293750;
+      --court: #2ba3df;
+      --court-deep: #74c6f1;
+      --night: #101929;
+      --night-2: #1a2740;
+      --tip-bg: #2b2510;
+      --tip-border: #6b5a1c;
+      --tip-text: #f6e3a1;
+      --warn-bg: #2d1518;
+      --warn-border: #6e2a30;
+      --warn-text: #f5b5b5;
+      --halo: rgba(245, 240, 229, .09);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 30px -16px rgba(0, 0, 0, .8);
+      color-scheme: dark;
+    }
+
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color .25s ease, color .25s ease;
+    }
+
+    /* ---------- TYPOGRAPHIE ---------- */
+    .display {
+      font-family: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .01em;
+      line-height: 1;
+    }
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+    .tnum { font-variant-numeric: tabular-nums; }
+
+    /* ---------- COMPOSANTS ---------- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    .card-link { transition: transform .2s ease, border-color .2s ease; text-align: left; }
+    .card-link:hover { transform: translateY(-3px); border-color: var(--court); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 46px; padding: 0 18px; border-radius: 14px;
+      font-weight: 700; font-size: 15px; line-height: 1.2;
+      transition: transform .15s ease, background-color .15s ease, border-color .15s ease;
+      cursor: pointer;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { background: var(--court); color: var(--on-accent); box-shadow: 3px 3px 0 var(--sun); }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--court); }
+    .btn-night { background: rgba(255, 255, 255, .1); color: #fff; border: 1px solid rgba(255, 255, 255, .22); }
+    .btn-night:hover { background: rgba(255, 255, 255, .18); }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .tip { background: var(--tip-bg); border: 1px solid var(--tip-border); color: var(--tip-text); border-radius: 18px; }
+    .warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); border-radius: 18px; }
+    .halo { background: radial-gradient(closest-side, var(--halo), transparent); }
+
+    input[type="range"] { width: 100%; height: 28px; accent-color: var(--court); cursor: pointer; }
+
+    :focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 10px; }
+
+    .tabbar { padding-bottom: env(safe-area-inset-bottom); }
+    .with-tabbar { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+    @media (min-width: 1024px) { .with-tabbar { padding-bottom: 0; } }
+
+    /* ---------- ANIMATIONS ---------- */
+    @keyframes dash-move { to { stroke-dashoffset: -20; } }
+    .animated-path { stroke-dasharray: 6; animation: dash-move 1s linear infinite; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .animate-fadeIn { animation: fadeIn .25s ease both; }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+    .animate-scaleIn { animation: scaleIn .18s ease-out both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // --- ICON WRAPPER ---
+    const Icon = ({ name, size = 18, className = "", fill = "none", strokeWidth = 2 }) => {
+      const iconRef = useRef(null);
+      useEffect(() => {
+        const el = iconRef.current;
+        if (!el || !window.lucide) return;
+        const pascal = name.replace(/(^|-)([a-z0-9])/g, (m, sep, c) => c.toUpperCase());
+        const node = (window.lucide.icons && window.lucide.icons[pascal]) || window.lucide[pascal];
+        if (!node) return;
+        const svg = window.lucide.createElement(node);
+        svg.setAttribute('width', size);
+        svg.setAttribute('height', size);
+        svg.setAttribute('stroke-width', strokeWidth);
+        svg.setAttribute('fill', fill);
+        svg.setAttribute('aria-hidden', 'true');
+        el.replaceChildren(svg);
+      }, [name, size, fill, strokeWidth]);
+      return <span ref={iconRef} className={`inline-flex shrink-0 items-center justify-center ${className}`} style={{ width: size, height: size }} />;
+    };
+
+    // --- THÈME CLAIR / SOMBRE ---
+    function useTheme() {
+      const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'light');
+      useEffect(() => {
+        document.documentElement.dataset.theme = theme;
+        try { localStorage.setItem('knt-theme', theme); } catch (e) {}
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0c1320' : '#fbf8f0');
+      }, [theme]);
+      const toggle = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), []);
+      return [theme, toggle];
+    }
+
+    function ThemeToggle({ theme, onToggle, night = false }) {
+      const isDark = theme === 'dark';
+      return (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          title={isDark ? 'Mode clair' : 'Mode sombre'}
+          className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${night ? 'border-white/20 bg-white/10 text-onnight hover:bg-white/20' : 'border-line bg-surface text-ink hover:border-court'}`}
+        >
+          <Icon name={isDark ? 'sun' : 'moon'} size={19} />
+        </button>
+      );
+    }
+
+    // --- LISTE DES LANGUES ---
+    const LANGUAGES = [
+      { code: 'fr', sigle: 'FR', label: 'Français', flag: '🇫🇷' },
+      { code: 'es', sigle: 'ES', label: 'Español', flag: '🇪🇸' },
+      { code: 'en-gb', sigle: 'GB', label: 'English (UK)', flag: '🇬🇧' },
+      { code: 'en-us', sigle: 'US', label: 'English (US)', flag: '🇺🇸' },
+      { code: 'zh', sigle: 'CN', label: '中文', flag: '🇨🇳' },
+    ];
+
+    // --- COMPOSANT SÉLECTEUR DE LANGUE ---
+    function LanguageSelector() {
+      const [isOpen, setIsOpen] = useState(false);
+      const [selectedLang, setSelectedLang] = useState(LANGUAGES[0]);
+      const dropdownRef = useRef(null);
+
+      useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            setIsOpen(false);
+          }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+
+      return (
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex h-11 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 transition-colors hover:border-court"
+            aria-expanded={isOpen}
+            aria-label={`Langue : ${selectedLang.label}`}
+          >
+            <span className="text-xl leading-none">{selectedLang.flag}</span>
+            <Icon name="chevron-down" size={15} className={`text-soft transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isOpen && (
+            <div className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-line bg-surface p-1.5 shadow-xl animate-fadeIn">
+              {LANGUAGES.map((lang) => {
+                const isSelected = lang.code === selectedLang.code;
+                return (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => { setSelectedLang(lang); setIsOpen(false); }}
+                    className={`flex min-h-[44px] w-full items-center justify-between rounded-xl px-3 text-[15px] transition-colors ${isSelected ? 'bg-surface2 font-bold text-courtdeep' : 'font-medium text-ink hover:bg-surface2'}`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="text-lg leading-none">{lang.flag}</span>
+                      <span>{lang.label}</span>
+                    </span>
+                    {isSelected && <Icon name="check" size={16} className="text-court" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- COMPOSANT MASCOTTE ---
+    function CoatiVector({ className = "", size = "w-28 h-28 sm:w-36 sm:h-36" }) {
+      const [imgError, setImgError] = useState(false);
+
+      if (imgError) {
+        return (
+          <div className={`tip flex shrink-0 items-center justify-center ${size} ${className}`}>
+            <Icon name="smile" size={32} />
+          </div>
+        );
+      }
+
+      return (
+        <div className={`halo flex shrink-0 items-center justify-center rounded-full ${className}`}>
+          <img
+            src="images/20260815_152922_0000.png"
+            alt="Mascotte Coati"
+            onError={() => setImgError(true)}
+            className={`${size} object-contain`}
+          />
+        </div>
+      );
+    }
+
+    // --- SVG BALLON KIN-BALL ---
+    function KinBallVector({ size = 28, className = "", color = "var(--on-night)" }) {
+      return (
+        <svg viewBox="0 0 100 100" style={{ width: size, height: size }} className={`fill-none ${className}`} aria-hidden="true">
+          <circle cx="50" cy="50" r="44" stroke={color} strokeWidth="5" />
+          <circle cx="50" cy="50" r="30" stroke={color} strokeWidth="5" />
+          <line x1="20" y1="50" x2="80" y2="50" stroke={color} strokeWidth="5" strokeLinecap="round" />
+          <line x1="50" y1="6" x2="50" y2="20" stroke={color} strokeWidth="5" strokeLinecap="round" />
+          <line x1="50" y1="80" x2="50" y2="94" stroke={color} strokeWidth="5" strokeLinecap="round" />
+          <line x1="28.8" y1="28.8" x2="18.9" y2="18.9" stroke={color} strokeWidth="5" strokeLinecap="round" />
+          <line x1="71.2" y1="28.8" x2="81.1" y2="18.9" stroke={color} strokeWidth="5" strokeLinecap="round" />
+          <line x1="28.8" y1="71.2" x2="18.9" y2="81.1" stroke={color} strokeWidth="5" strokeLinecap="round" />
+          <line x1="71.2" y1="71.2" x2="81.1" y2="81.1" stroke={color} strokeWidth="5" strokeLinecap="round" />
+        </svg>
+      );
+    }
+
+    // --- DATA ---
+    const ALL_SIGNALS = [
+      { id: 'BLEU', name: 'BLEU', hex: '#118fca' },
+      { id: 'GRIS', name: 'GRIS', hex: '#8b9299' },
+      { id: 'NOIR', name: 'NOIR', hex: '#232a33' },
+    ];
+
+    const DIRECTIONS = ['Gauche', 'Droite', 'Devant', 'Derrière'];
+
+    const WARMUP_EXERCISES = [
+      {
+        id: 'ex1',
+        title: 'Mobilité chevilles & genoux',
+        duration: '1 min',
+        muscles: ['Chevilles', 'Genoux', 'Mollets'],
+        desc: 'Rotations douces, fentes avant dynamiques légères pour préparer les articulations aux arrêts nets.',
+        advice: 'Ne force pas sur les amplitudes au début, augmente progressivement la vitesse.',
+        icon: 'activity'
+      },
+      {
+        id: 'ex2',
+        title: 'Montées de genoux & pas chassés',
+        duration: '2 min',
+        muscles: ['Quadri', 'Ischios', 'Cardio'],
+        desc: 'Activation cardiovasculaire progressive. Alterner 10m de pas chassés et courses légères.',
+        advice: 'Garde le buste bien droit et les appuis souples sur le devant des pieds.',
+        icon: 'zap'
+      },
+      {
+        id: 'ex3',
+        title: 'Changements d’appuis courts',
+        duration: '1 min',
+        muscles: ['Adducteurs', 'Fessiers', 'Réactivité'],
+        desc: 'Petits sursauts sur place, décalages rapides pieds gauche/droite pour réveiller le système nerveux.',
+        advice: 'Maintiens une fréquence de pas très rapide tout en restant bas sur tes jambes.',
+        icon: 'flame'
+      },
+      {
+        id: 'ex4',
+        title: 'Ouverture de hanches & squats dynamiques',
+        duration: '1 min',
+        muscles: ['Hanches', 'Fessiers', 'Lombaires'],
+        desc: 'Circumductions des hanches suivies de squats légers pour engager le bas du corps.',
+        advice: 'Pousse bien les fesses vers l\'arrière et garde le talon ancré au sol.',
+        icon: 'repeat'
+      }
+    ];
+
+    const WARMUP_ROUTINE_5MIN = [
+      { id: 1, title: 'Mobilité chevilles & poignets', desc: 'Rotations douces des chevilles, des poignets et des épaules.', icon: 'activity' },
+      { id: 2, title: 'Pas chassés légers', desc: 'Déplacements latéraux souples sur les avant-pieds sans croiser.', icon: 'repeat' },
+      { id: 3, title: 'Montées de genoux', desc: 'Rythme modéré, buste bien droit et bras en opposition.', icon: 'zap' },
+      { id: 4, title: 'Ouverture & fermeture de hanches', desc: 'Alterner jambe gauche et droite vers l’extérieur puis l’intérieur.', icon: 'activity' },
+      { id: 5, title: 'Squats dynamiques légers', desc: 'Descente contrôlée et poussée fluide sans bloquer en bas.', icon: 'flame' },
+      { id: 6, title: 'Appuis courts & rapides', desc: 'Petits pieds très rapides sur place, bassin fléchi et bas.', icon: 'zap' },
+      { id: 7, title: 'Fentes avant dynamiques', desc: 'Alterner les fentes sans descendre trop bas au début.', icon: 'repeat' },
+      { id: 8, title: 'Talons-fesses rapides', desc: 'Buste légèrement incliné vers l’avant, fréquence de pas rapide.', icon: 'activity' },
+      { id: 9, title: 'Sursauts & poussées mollets', desc: 'Petites impulsions explosives pour réveiller le système nerveux.', icon: 'flame' },
+      { id: 10, title: 'Sprints courts & arrêts nets', desc: '2-3 pas explosifs, blocage d’appui net, puis retour au centre.', icon: 'crosshair' },
+    ];
+
+    const DIFFICULTY_LEVELS = {
+      niveau1: {
+        id: 'niveau1',
+        short: 'Niveau 1',
+        label: 'Niv. 1 · Éléments / Maison',
+        badge: '🟢 Découverte & appuis courts',
+        distanceMeters: '1.5 à 2.5 mètres',
+        distanceShort: '1,5 – 2,5 m',
+        scaleFactor: 0.45,
+        targetRadius: 16,
+        description: 'Idéal en espace restreint (salon, jardin) ou pour débuter. Travail axé sur la vitesse de réaction pure et le changement de direction immédiat sans prise d’élan.',
+        objective: 'Privilégier la fréquence de pas et le temps de réaction réflexe.'
+      },
+      niveau2: {
+        id: 'niveau2',
+        short: 'Niveau 2',
+        label: 'Niv. 2 · Intermédiaire',
+        badge: '🟡 Explosivité & démarrage',
+        distanceMeters: '3.5 à 5 mètres',
+        distanceShort: '3,5 – 5 m',
+        scaleFactor: 0.75,
+        targetRadius: 18,
+        description: 'Format idéal pour travailler la puissance du premier pas et l’accélération sur courte distance. Parfait pour se rapprocher des déplacements réels en défense de zone.',
+        objective: 'Pousser fort sur la jambe d’appui pour créer un départ explosif.'
+      },
+      niveau3: {
+        id: 'niveau3',
+        short: 'Niveau 3',
+        label: 'Niv. 3 · Pro / Conditions Match',
+        badge: '🔴 Vitesse max & sprint',
+        distanceMeters: '6 à 8+ mètres',
+        distanceShort: '6 – 8 m et +',
+        scaleFactor: 0.95,
+        targetRadius: 20,
+        description: 'Configuration match officielle sur grand terrain. Exige une vitesse maximale en sprint pour réussir à toucher le plot et revenir rapidement se replacer.',
+        objective: 'Conserver la vitesse de pointe tout en anticipant la décélération à l’approche du plot.'
+      }
+    };
+
+    const EXERCISES = {
+      'reactivity-selective': {
+        id: 'reactivity-selective',
+        name: 'Prise d’info & réactivité',
+        eyebrow: 'Annonce directionnelle',
+        short: 'Réagis uniquement si ta couleur est annoncée.',
+        description: 'Des plots entourent le joueur (devant, derrière, gauche, droite). L’annonce vocale dicte la direction et la couleur. Ne te déplace que si ta couleur attribuée est appelée !',
+        instruction: 'Écoute la direction et la couleur. Si c’est TA couleur, sprinte vers le plot indiqué et reviens. Sinon, reste concentré !',
+        advice: 'Reste très vigilant : en cas de mauvaise couleur, le délai suivant est très court pour piéger ton attention.',
+        steps: [
+          { title: 'Attribution couleur', desc: 'Choisis ta couleur personnelle dans les paramètres avant de démarrer.' },
+          { title: 'Prise d’information', desc: 'Écoute l’annonce vocale (ex : « Gauche, Omnikin Gris »).' },
+          { title: 'Action & repositionnement', desc: 'Si ta couleur est citée, cours au plot et reviens. Sinon, garde les appuis prêts.' }
+        ],
+        icon: 'compass',
+      },
+      appel: {
+        id: 'appel',
+        name: 'Appel couleur',
+        eyebrow: 'Réaction simple',
+        short: 'Un signal, un déplacement court ou long.',
+        description: 'Écoute une couleur, touche la cible correspondante puis reviens au centre.',
+        instruction: 'Touche la zone annoncée, puis reviens au centre avant le prochain appel.',
+        advice: 'Travaille l’impulsion explosive sur les premiers pas. Garde les genoux fléchis.',
+        steps: [
+          { title: 'Position neutre', desc: 'Debout au centre, appuis légers sur l’avant des pieds.' },
+          { title: 'Prise d’info', desc: 'Pivote directement vers la couleur dès le signal sonore.' },
+          { title: 'Toucher & replacement', desc: 'Touche le repère puis réenclenche immédiatement le retour au centre.' }
+        ],
+        icon: 'zap',
+      },
+      'plot-sprint': {
+        id: 'plot-sprint',
+        name: 'Plot + sprint',
+        eyebrow: 'Départ explosif',
+        short: 'Touche le sol d’abord. Couleur ensuite.',
+        description: 'Chaque séquence commence par le plot au sol, puis déclenche une direction.',
+        instruction: 'Touche le sol/plot central, écoute la couleur, puis touche la zone.',
+        advice: 'Descends bien le bassin au centre pour optimiser la poussée des cuisses.',
+        steps: [
+          { title: 'Flexion & toucher', desc: 'Au signal, touche le repère au sol entre tes pieds.' },
+          { title: 'Écoute', desc: 'Annonce vocale lue pendant ta flexion.' },
+          { title: 'Sortie rapide', desc: 'Explose vers la direction dictée.' }
+        ],
+        icon: 'crosshair',
+      },
+      double: {
+        id: 'double',
+        name: 'Double couleur',
+        eyebrow: 'Lecture en chaîne',
+        short: 'Deux couleurs. Enchaînement rapide.',
+        description: 'Mémorise deux couleurs distinctes annoncées à la suite, puis exécute le parcours.',
+        instruction: 'Repère les deux couleurs dans l’ordre exact annoncé, puis reviens au centre.',
+        advice: 'Ne précipite pas la foulée : mémorise bien la séquence complète dès l’annonce.',
+        steps: [
+          { title: 'Écoute double', desc: 'Enregistre mentalement les 2 couleurs annoncées.' },
+          { title: 'Enchaînement', desc: 'Sprinte vers la 1re cible, touche-la, puis enchaîne vers la 2e.' },
+          { title: 'Restitution', desc: 'Reviens au point central pour la séquence suivante.' }
+        ],
+        icon: 'activity',
+      },
+      'double-centre-sprint': {
+        id: 'double-centre-sprint',
+        name: 'Double centre + sprint',
+        eyebrow: 'Appuis courts + sortie',
+        short: 'Gauche. Droite. Sprint couleur.',
+        description: 'Touche les deux plots proches au centre avant de sprinter vers la couleur au loin.',
+        instruction: 'Couleur annoncée, touche plot gauche, plot droit, puis sprint vers la couleur.',
+        advice: 'Travaille la vitesse d’appuis latéraux au centre avant d’engager la grande foulée.',
+        steps: [
+          { title: 'Annonce & appuis', desc: 'Écoute la couleur mais touche le plot central gauche puis droite.' },
+          { title: 'Transition rapide', desc: 'Transfère directement ton poids du corps vers la cible.' },
+          { title: 'Grand sprint', desc: 'Engage une accélération maximale vers la cible couleur.' }
+        ],
+        icon: 'repeat',
+      },
+    };
+
+    const DEFAULT_SETTINGS = {
+      'reactivity-selective': { work: 60, restMin: 4, restMax: 6, shortRest: 1.5, countdown: 3, playerColor: 'BLEU', colors: ['BLEU', 'GRIS', 'NOIR'], level: 'niveau1', preventConsecutiveColors: false },
+      appel: { work: 60, restFixed: 4, isRandomRest: true, restMin: 3, restMax: 8, countdown: 3, colors: ['BLEU', 'GRIS', 'NOIR'], level: 'niveau1', preventConsecutiveColors: true },
+      'plot-sprint': { work: 60, restFixed: 5, isRandomRest: true, restMin: 3, restMax: 8, countdown: 3, colors: ['BLEU', 'GRIS', 'NOIR'], level: 'niveau2', preventConsecutiveColors: true },
+      double: { work: 60, restFixed: 6, isRandomRest: false, restMin: 4, restMax: 8, countdown: 3, colors: ['BLEU', 'GRIS', 'NOIR'], level: 'niveau2', preventConsecutiveColors: true },
+      'double-centre-sprint': { work: 60, restFixed: 6, isRandomRest: false, restMin: 4, restMax: 8, countdown: 3, colors: ['BLEU', 'GRIS', 'NOIR'], level: 'niveau2', preventConsecutiveColors: true },
+    };
+
+    // Réglages mémorisés sur l'appareil (aucune donnée envoyée)
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('knt-settings') || '{}');
+        const merged = {};
+        Object.keys(DEFAULT_SETTINGS).forEach((id) => {
+          merged[id] = { ...DEFAULT_SETTINGS[id], ...(saved && typeof saved[id] === 'object' ? saved[id] : {}) };
+        });
+        return merged;
+      } catch (e) {
+        return DEFAULT_SETTINGS;
+      }
+    }
+
+    function formatDuration(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainder = seconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+    }
+
+    // --- BRIQUES D'INTERFACE ---
+    function BrandLockup({ compact = false, onClick }) {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          className="group flex items-center gap-3 text-left"
+          title="Retour à l'accueil"
+          aria-label="Kin-Ball Trainer, retour à l'accueil"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-court shadow-[3px_3px_0_var(--sun)] transition-transform group-hover:scale-105">
+            <KinBallVector size={26} color="var(--on-accent)" />
+          </span>
+          <span className="leading-none">
+            <span className={`display block text-[24px] ${compact ? 'text-ink' : 'text-onnight'}`}>Kin-Ball</span>
+            <span className={`mt-0.5 block text-[11px] font-bold uppercase tracking-[.22em] ${compact ? 'text-courtdeep' : 'text-court'}`}>Trainer</span>
+          </span>
+        </button>
+      );
+    }
+
+    function BackButton({ onClick, children }) {
+      return (
+        <button type="button" onClick={onClick} className="mb-5 inline-flex min-h-[44px] items-center gap-2 text-[15px] font-semibold text-soft transition-colors hover:text-ink">
+          <Icon name="arrow-left" size={17} /> {children}
+        </button>
+      );
+    }
+
+    function PageHeader({ eyebrow, title, desc, right }) {
+      return (
+        <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="eyebrow">{eyebrow}</p>
+            <h1 className="display mt-2 text-[38px] sm:text-[48px] text-ink">{title}</h1>
+            {desc && <p className="mt-3 max-w-xl text-[16px] text-soft">{desc}</p>}
+          </div>
+          {right}
+        </header>
+      );
+    }
+
+    function Copyright() {
+      return (
+        <footer className="mx-auto max-w-[1040px] px-5 pb-8 pt-2 text-center text-[13px] leading-relaxed text-soft sm:px-8">
+          <p>© 2026 KLP (Key Lime Pie). Tous droits réservés.</p>
+          <p>© 2026 TKLP (Team Key Lime Pie). Tous droits réservés.</p>
+        </footer>
+      );
+    }
+
+    function Slider({ label, value, display, min, max, step = 1, onChange }) {
+      return (
+        <label className="block">
+          <span className="flex items-baseline justify-between gap-3 text-[15px]">
+            <span className="font-medium text-ink">{label}</span>
+            <strong className="tnum text-courtdeep">{display}</strong>
+          </span>
+          <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="mt-1" />
+        </label>
+      );
+    }
+
+    function LevelPicker({ value, onChange }) {
+      return (
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Distance de travail">
+          {Object.keys(DIFFICULTY_LEVELS).map((lvlKey) => {
+            const lvl = DIFFICULTY_LEVELS[lvlKey];
+            const active = value === lvlKey;
+            return (
+              <button
+                key={lvlKey}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => onChange(lvlKey)}
+                className={`min-h-[60px] rounded-2xl border px-2 py-2.5 text-center transition-colors ${active ? 'border-court bg-court text-onaccent' : 'border-line bg-surface2 text-soft hover:border-court'}`}
+              >
+                <span className="block text-[13px] font-bold uppercase tracking-wide">{lvl.short}</span>
+                <span className="tnum mt-0.5 block text-[13px]">{lvl.distanceShort}</span>
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function StepList({ steps }) {
+      return (
+        <ol className="space-y-4">
+          {steps.map((step, idx) => (
+            <li key={idx} className="flex items-start gap-3.5">
+              <span className="tnum mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-court text-[14px] font-bold text-onaccent">{idx + 1}</span>
+              <div>
+                <h4 className="text-[16px] font-bold text-ink">{step.title}</h4>
+                <p className="mt-0.5 text-[15px] text-soft">{step.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      );
+    }
+
+    // Onglets communs à l'espace Entraînement
+    function TrainTabs({ screen, onNavigate }) {
+      const tabs = [
+        { id: 'home-exercises', label: 'Maison', icon: 'house' },
+        { id: 'gym-exercises', label: 'Salle', icon: 'dumbbell' },
+        { id: 'demo', label: 'Guide des distances', icon: 'crosshair' },
+      ];
+      return (
+        <div className="mb-7 -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+          <div className="inline-flex gap-1 rounded-2xl border border-line bg-surface p-1">
+            {tabs.map((t) => {
+              const active = screen === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => onNavigate(t.id)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`inline-flex min-h-[42px] items-center gap-2 whitespace-nowrap rounded-xl px-4 text-[15px] font-semibold transition-colors ${active ? 'bg-night text-onnight' : 'text-soft hover:text-ink'}`}
+                >
+                  <Icon name={t.icon} size={16} /> {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function CourtAnimation({ exerciseId, difficultyLevel }) {
+      const levelConfig = DIFFICULTY_LEVELS[difficultyLevel] || DIFFICULTY_LEVELS.niveau1;
+      const factor = levelConfig.scaleFactor;
+
+      const bleuX = 250 - (120 * factor);
+      const bleuY = 250 - (120 * factor);
+
+      const grisX = 250 + (120 * factor);
+      const grisY = 250 - (120 * factor);
+
+      const noirX = 250;
+      const noirY = 250 + (140 * factor);
+
+      return (
+        <div className="relative mx-auto aspect-square w-full max-w-[440px] overflow-hidden rounded-2xl border border-white/10 bg-[#172235] p-3">
+          <svg className="h-full w-full" viewBox="0 0 500 500" fill="none" role="img" aria-label={`Schéma du terrain, écart ${levelConfig.distanceMeters}`}>
+            <defs>
+              <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
+              </pattern>
+              <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#f4c52d" />
+              </marker>
+            </defs>
+
+            <rect x="40" y="40" width="420" height="420" fill="url(#grid)" />
+            <rect x="40" y="40" width="420" height="420" rx="6" stroke="#118fca" strokeWidth="3" opacity="0.6" />
+
+            <circle cx="250" cy="250" r="6" fill="#f4c52d" />
+            <circle cx="250" cy="250" r="20" stroke="#f4c52d" strokeWidth="1.5" strokeDasharray="3 3" />
+            <text x="250" y="222" textAnchor="middle" fill="#f4c52d" fontSize="13" fontWeight="bold" fontFamily="sans-serif">CENTRE</text>
+
+            {exerciseId === 'reactivity-selective' ? (
+              <>
+                <g transform="translate(250, 130)">
+                  <circle r="16" fill="#f4c52d" stroke="#ffffff" strokeWidth="2" />
+                  <text y="-24" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="bold">DEVANT</text>
+                </g>
+                <g transform="translate(250, 370)">
+                  <circle r="16" fill="#f4c52d" stroke="#ffffff" strokeWidth="2" />
+                  <text y="36" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="bold">DERRIÈRE</text>
+                </g>
+                <g transform="translate(130, 250)">
+                  <circle r="16" fill="#f4c52d" stroke="#ffffff" strokeWidth="2" />
+                  <text y="36" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="bold">GAUCHE</text>
+                </g>
+                <g transform="translate(370, 250)">
+                  <circle r="16" fill="#f4c52d" stroke="#ffffff" strokeWidth="2" />
+                  <text y="36" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="bold">DROITE</text>
+                </g>
+                <path d="M 250 250 L 152 250" stroke="#f4c52d" strokeWidth="3" className="animated-path" markerEnd="url(#arrow)" />
+              </>
+            ) : (
+              <>
+                <g transform={`translate(${bleuX}, ${bleuY})`} className="transition-all duration-300">
+                  <circle r={levelConfig.targetRadius} fill="#118fca" stroke="#ffffff" strokeWidth="2" />
+                  <text y="4" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">BLEU</text>
+                </g>
+                <g transform={`translate(${grisX}, ${grisY})`} className="transition-all duration-300">
+                  <circle r={levelConfig.targetRadius} fill="#8b9299" stroke="#ffffff" strokeWidth="2" />
+                  <text y="4" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">GRIS</text>
+                </g>
+                <g transform={`translate(${noirX}, ${noirY})`} className="transition-all duration-300">
+                  <circle r={levelConfig.targetRadius} fill="#232a33" stroke="#ffffff" strokeWidth="2" />
+                  <text y="4" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">NOIR</text>
+                </g>
+              </>
+            )}
+
+            {exerciseId === 'appel' && (
+              <path d={`M 250 250 L ${bleuX} ${bleuY} L 250 250`} stroke="#f4c52d" strokeWidth="3" className="animated-path" markerEnd="url(#arrow)" />
+            )}
+
+            {exerciseId === 'plot-sprint' && (
+              <>
+                <circle cx="250" cy="280" r="5" fill="#ffffff" />
+                <path d={`M 250 250 L 250 280 L ${grisX} ${grisY}`} stroke="#f4c52d" strokeWidth="3" className="animated-path" markerEnd="url(#arrow)" />
+              </>
+            )}
+
+            {exerciseId === 'double' && (
+              <path d={`M 250 250 L ${bleuX} ${bleuY} L ${grisX} ${grisY} L 250 250`} stroke="#f4c52d" strokeWidth="3" className="animated-path" markerEnd="url(#arrow)" />
+            )}
+
+            {exerciseId === 'double-centre-sprint' && (
+              <>
+                <circle cx="230" cy="250" r="5" fill="#ffffff" />
+                <circle cx="270" cy="250" r="5" fill="#ffffff" />
+                <path d={`M 250 250 L 230 250 L 270 250 L ${noirX} ${noirY}`} stroke="#f4c52d" strokeWidth="3" className="animated-path" markerEnd="url(#arrow)" />
+              </>
+            )}
+          </svg>
+
+          <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/70 px-3.5 py-2 text-[13px] text-[#f4c52d] backdrop-blur-md">
+            <span className="font-semibold">{levelConfig.badge}</span>
+            <span className="tnum whitespace-nowrap font-bold text-white">{levelConfig.distanceShort}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // --- ACCUEIL PRINCIPAL ---
+    function HomeScreen({ onNavigate }) {
+      const [imgError, setImgError] = useState(false);
+
+      const blocks = [
+        {
+          id: 'home-exercises', featured: true, icon: 'house', eyebrow: 'Entraînement solo', title: 'Exercices maison',
+          desc: 'Appels couleur, réactivité sélective, départs explosifs et doubles séquences.', cta: 'Lancer l\'entraînement',
+        },
+        {
+          id: 'warmup', icon: 'flame', eyebrow: 'Préparation', title: 'Échauffement',
+          desc: 'Session guidée de 5 minutes : 10 exercices de 30 secondes, annoncés à la voix.', cta: 'Accéder',
+        },
+        {
+          id: 'gym-exercises', icon: 'dumbbell', eyebrow: 'Terrain & gymnase', title: 'Exercices salle',
+          desc: 'Workouts collectifs, circuits grand terrain et ateliers tactiques sur vrai terrain.', cta: 'Découvrir', soon: true,
+        },
+      ];
+
+      return (
+        <main className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 sm:py-10">
+          {/* HERO */}
+          <section className="card grid items-center overflow-hidden md:grid-cols-[1.25fr_.75fr]">
+            <div className="p-6 sm:p-10">
+              <p className="eyebrow">Physique · Réactivité · Explosivité</p>
+              <h1 className="display mt-3 text-[52px] sm:text-[72px] text-ink">
+                Kin-Ball <span className="text-court">Trainer</span>
+              </h1>
+              <p className="mt-4 max-w-md text-[17px] text-soft">
+                L'application d'entraînement physique et réactif dédiée aux joueurs de Kin-Ball.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <button type="button" onClick={() => onNavigate('home-exercises')} className="btn btn-primary">
+                  <Icon name="play" size={17} fill="currentColor" /> S'entraîner
+                </button>
+                <button type="button" onClick={() => onNavigate('warmup')} className="btn btn-ghost">
+                  <Icon name="flame" size={17} /> Échauffement 5 min
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-center px-6 pb-6 md:p-6">
+              {imgError ? (
+                <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-court shadow-[4px_4px_0_var(--sun)]">
+                  <KinBallVector size={60} color="var(--on-accent)" />
+                </div>
+              ) : (
+                <div className="halo aspect-[336/350] w-full max-w-[260px] overflow-hidden rounded-full">
+                  <img
+                    src="images/12772-removebg-preview.png"
+                    alt="Les mascottes de Kin-Ball Trainer"
+                    onError={() => setImgError(true)}
+                    className="h-full w-full object-cover"
+                    style={{ objectPosition: '50% 43%' }}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* LES 3 ESPACES */}
+          <section className="mt-12">
+            <p className="eyebrow">Choisis ton espace</p>
+            <h2 className="display mt-2 text-[32px] text-ink">S'entraîner</h2>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-3">
+              {blocks.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => onNavigate(b.id)}
+                  className={`card card-link flex flex-col p-6 ${b.featured ? '!border-court !bg-night' : ''}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${b.featured ? 'bg-court text-onaccent shadow-[2px_2px_0_var(--sun)]' : 'bg-surface2 text-courtdeep'}`}>
+                      <Icon name={b.icon} size={23} />
+                    </span>
+                    {b.soon && <span className="chip">Bientôt</span>}
+                  </div>
+                  <p className={`mt-6 text-[12px] font-bold uppercase tracking-[.14em] ${b.featured ? 'text-sun' : 'text-courtdeep'}`}>{b.eyebrow}</p>
+                  <h3 className={`display mt-1.5 text-[28px] ${b.featured ? 'text-onnight' : 'text-ink'}`}>{b.title}</h3>
+                  <p className={`mt-2.5 flex-1 text-[15px] ${b.featured ? 'text-onnightsoft' : 'text-soft'}`}>{b.desc}</p>
+                  <span className={`mt-6 inline-flex items-center gap-2 text-[15px] font-bold ${b.featured ? 'text-sun' : 'text-courtdeep'}`}>
+                    {b.cta} <Icon name="arrow-right" size={17} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* À VENIR */}
+          <section className="mt-12">
+            <p className="eyebrow">Prochaine mise à jour</p>
+            <h2 className="display mt-2 text-[32px] text-ink">Lexique & gestes d'arbitrage</h2>
+
+            <div className="mt-5 flex flex-col gap-5 rounded-[22px] border-2 border-dashed border-line p-6 sm:flex-row sm:items-center">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface2 text-courtdeep">
+                <Icon name="book-open" size={23} />
+              </span>
+              <div className="flex-1">
+                <p className="text-[16px] text-ink">
+                  Cet espace servira bientôt de lexique complet pour mémoriser les signaux d'arbitrage officiels et les règles de base du Kin-Ball.
+                </p>
+                <p className="mt-2 text-[15px] text-soft">
+                  En bonus : des <strong className="text-courtdeep">flashcards de révision</strong> interactives pour apprendre et tester tes connaissances facilement.
+                </p>
+              </div>
+              <span className="chip self-start sm:self-center"><Icon name="construction" size={15} /> En cours de création</span>
+            </div>
+          </section>
+
+          {/* À PROPOS */}
+          <section className="card mt-12 flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
+            <CoatiVector size="w-20 h-20" />
+            <div className="flex-1">
+              <p className="eyebrow">À propos</p>
+              <h3 className="display mt-1.5 text-[24px] text-ink">Kin-Ball Trainer & ses créateurs</h3>
+              <p className="mt-2 max-w-xl text-[15px] text-soft">
+                Application conçue pour perfectionner la vitesse d'action-réaction des joueurs de Kin-Ball. Développée par des passionnés du sport.
+              </p>
+            </div>
+            <button type="button" onClick={() => onNavigate('about')} className="btn btn-ghost shrink-0">
+              <Icon name="info" size={17} /> En savoir plus
+            </button>
+          </section>
+        </main>
+      );
+    }
+
+    // --- MODALE DÉTAIL EXERCICE D'ÉCHAUFFEMENT ---
+    function ExerciseDetailModal({ exercise, onClose }) {
+      useEffect(() => {
+        if (!exercise) return;
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+      }, [exercise, onClose]);
+
+      if (!exercise) return null;
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={exercise.title}
+            onClick={(e) => e.stopPropagation()}
+            className="animate-fadeIn relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[28px] border border-line bg-surface p-6 shadow-2xl sm:rounded-[28px] sm:p-8"
+          >
+            <button type="button" onClick={onClose} aria-label="Fermer" className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface2 text-ink hover:border-court">
+              <Icon name="x" size={19} />
+            </button>
+
+            <div className="flex items-center gap-4 pr-12">
+              <CoatiVector size="w-20 h-20" />
+              <div>
+                <span className="chip tnum">{exercise.duration}</span>
+                <h3 className="display mt-2 text-[26px] text-ink">{exercise.title}</h3>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-5">
+              <div>
+                <p className="eyebrow mb-2">Zones du corps ciblées</p>
+                <div className="flex flex-wrap gap-2">
+                  {exercise.muscles.map((m, idx) => <span key={idx} className="chip">{m}</span>)}
+                </div>
+              </div>
+
+              <div>
+                <p className="eyebrow mb-2">Description</p>
+                <p className="text-[16px] text-ink">{exercise.desc}</p>
+              </div>
+
+              {exercise.advice && (
+                <div className="tip p-4">
+                  <p className="mb-1 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wider">
+                    <Icon name="lightbulb" size={16} /> Conseil mascotte
+                  </p>
+                  <p className="text-[15px] font-medium">{exercise.advice}</p>
+                </div>
+              )}
+            </div>
+
+            <button type="button" onClick={onClose} className="btn btn-primary mt-7 w-full">Fermer</button>
+          </div>
+        </div>
+      );
+    }
+
+    // --- ÉCRAN INTERACTIF CHRONO 5 MIN ÉCHAUFFEMENT ---
+    function WarmupTimerScreen({ onStop, speak, stopSpeech }) {
+      const TOTAL_TIME = 300; // 5 min
+      const INTERVAL_TIME = 30; // 30s
+      const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
+      const [isPaused, setIsPaused] = useState(false);
+
+      const currentStepIndex = Math.min(
+        Math.floor((TOTAL_TIME - timeLeft) / INTERVAL_TIME),
+        WARMUP_ROUTINE_5MIN.length - 1
+      );
+      const currentStep = WARMUP_ROUTINE_5MIN[currentStepIndex];
+      const nextStep = WARMUP_ROUTINE_5MIN[currentStepIndex + 1];
+      const stepTimeLeft = (timeLeft % INTERVAL_TIME) === 0 && timeLeft < TOTAL_TIME ? INTERVAL_TIME : (timeLeft % INTERVAL_TIME);
+
+      const prevStepRef = useRef(-1);
+
+      useEffect(() => {
+        if (isPaused || timeLeft <= 0) return;
+        const timer = setInterval(() => {
+          setTimeLeft((prev) => prev - 1);
+        }, 1000);
+        return () => clearInterval(timer);
+      }, [isPaused, timeLeft]);
+
+      useEffect(() => {
+        if (currentStepIndex !== prevStepRef.current && !isPaused && timeLeft > 0) {
+          prevStepRef.current = currentStepIndex;
+          speak(`Exercice ${currentStepIndex + 1} sur 10. ${currentStep.title}`);
+        }
+      }, [currentStepIndex, isPaused, timeLeft, speak, currentStep]);
+
+      if (timeLeft <= 0) {
+        return (
+          <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#172235] px-6 text-center text-white">
+            <CoatiVector size="w-32 h-32" className="mb-5" />
+            <h1 className="display text-[48px] text-[#f4c52d]">Échauffement terminé !</h1>
+            <p className="mt-3 max-w-md text-[17px] text-white/70">Tes articulations et ton cardio sont au top. Bon entraînement !</p>
+            <button type="button" onClick={onStop} className="btn btn-primary mt-8">Retour au menu</button>
+          </main>
+        );
+      }
+
+      return (
+        <main className="min-h-[100dvh] bg-[#172235] px-5 py-5 text-white sm:px-8">
+          <div className="mx-auto max-w-[760px]">
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={() => { stopSpeech(); onStop(); }} className="btn btn-night">
+                <Icon name="x" size={17} /> Quitter
+              </button>
+              <div className="text-right">
+                <span className="block text-[12px] font-bold uppercase tracking-[.14em] text-white/60">Temps restant</span>
+                <span className="tnum display text-[30px] text-white">{formatDuration(timeLeft)}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-[28px] border border-white/15 bg-white/5 p-6 text-center sm:p-10">
+              <p className="text-[13px] font-bold uppercase tracking-[.14em] text-[#f4c52d]">Exercice {currentStepIndex + 1} sur 10</p>
+              <h1 className="display mt-3 text-[40px] text-white sm:text-[56px]">{currentStep.title}</h1>
+              <p className="mx-auto mt-4 max-w-md text-[17px] text-white/80">{currentStep.desc}</p>
+
+              <div className="tnum display mt-7 text-[88px] leading-none text-[#f4c52d]" aria-live="off">{stepTimeLeft}<span className="text-[36px]">s</span></div>
+
+              <div className="mt-6 h-3 w-full overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-[#f4c52d] transition-all duration-1000 ease-linear" style={{ width: `${((30 - stepTimeLeft) / 30) * 100}%` }} />
+              </div>
+
+              <button type="button" onClick={() => setIsPaused(!isPaused)} className="btn btn-night mt-7 min-w-[170px]">
+                <Icon name={isPaused ? 'play' : 'pause'} size={17} fill="currentColor" /> {isPaused ? 'Reprendre' : 'Pause'}
+              </button>
+            </div>
+
+            {nextStep && (
+              <p className="mt-5 text-center text-[15px] text-white/60">
+                Ensuite : <strong className="text-white/90">{nextStep.title}</strong>
+              </p>
+            )}
+
+            <div className="mt-7">
+              <p className="mb-3 text-[12px] font-bold uppercase tracking-[.14em] text-white/50">Programme complet · 30 s par exercice</p>
+              <ol className="grid gap-2 sm:grid-cols-2">
+                {WARMUP_ROUTINE_5MIN.map((step, idx) => {
+                  const isActive = idx === currentStepIndex;
+                  const isDone = idx < currentStepIndex;
+                  return (
+                    <li
+                      key={step.id}
+                      className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-[15px] transition-colors ${
+                        isActive
+                          ? 'border-[#f4c52d] bg-[#118fca] font-bold text-[#0d1626]'
+                          : isDone
+                            ? 'border-white/5 bg-white/5 text-white/40'
+                            : 'border-white/10 bg-white/5 text-white/80'
+                      }`}
+                    >
+                      <span className="tnum w-6 shrink-0 text-[13px] opacity-70">{isDone ? '✓' : String(idx + 1).padStart(2, '0')}</span>
+                      <span className="truncate">{step.title}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    // --- PAGE : ÉCHAUFFEMENT ---
+    function WarmupPage({ onBack, onStart5MinWarmup }) {
+      const [selectedEx, setSelectedEx] = useState(null);
+      const closeModal = useCallback(() => setSelectedEx(null), []);
+
+      return (
+        <main className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 sm:py-10">
+          <BackButton onClick={onBack}>Accueil</BackButton>
+
+          <PageHeader
+            eyebrow="Préparation physique"
+            title="Échauffement"
+            desc="Lance la séance guidée de 5 minutes, ou ouvre un exercice pour voir le détail."
+          />
+
+          {/* SÉANCE GUIDÉE */}
+          <section className="mt-8 flex flex-col gap-6 rounded-[22px] border border-court bg-night p-6 sm:flex-row sm:items-center sm:p-8">
+            <div className="flex-1">
+              <p className="text-[12px] font-bold uppercase tracking-[.14em] text-sun">Mode guidé automatique</p>
+              <h2 className="display mt-2 text-[32px] text-onnight">Mini-séance 5 minutes</h2>
+              <p className="mt-2 text-[16px] text-onnightsoft">10 exercices de 30 secondes. La voix annonce chaque changement, tu n'as pas besoin de regarder l'écran.</p>
+            </div>
+            <button type="button" onClick={onStart5MinWarmup} className="btn btn-primary shrink-0 !min-h-[54px] !px-6 !text-[16px]">
+              <Icon name="play" size={18} fill="currentColor" /> Lancer la séance
+            </button>
+          </section>
+
+          {/* EXERCICES */}
+          <section className="mt-12">
+            <p className="eyebrow">À la carte</p>
+            <h2 className="display mt-2 text-[32px] text-ink">Les exercices</h2>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {WARMUP_EXERCISES.map((w, idx) => (
+                <button key={w.id} type="button" onClick={() => setSelectedEx(w)} className="card card-link flex items-center gap-4 p-5">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface2 text-courtdeep">
+                    <Icon name={w.icon} size={22} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="tnum block text-[13px] font-bold text-courtdeep">{String(idx + 1).padStart(2, '0')} · {w.duration}</span>
+                    <span className="mt-0.5 block text-[17px] font-bold leading-snug text-ink">{w.title}</span>
+                    <span className="mt-1 block text-[14px] text-soft">{w.muscles.join(' · ')}</span>
+                  </span>
+                  <Icon name="chevron-right" size={20} className="text-soft" />
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <ExerciseDetailModal exercise={selectedEx} onClose={closeModal} />
+        </main>
+      );
+    }
+
+    // --- PAGE : EXERCICES EN SALLE ---
+    function GymExercisesPage({ onBack, onNavigate }) {
+      return (
+        <main className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 sm:py-10">
+          <BackButton onClick={onBack}>Accueil</BackButton>
+          <TrainTabs screen="gym-exercises" onNavigate={onNavigate} />
+
+          <PageHeader
+            eyebrow="Terrain officiel"
+            title="Exercices en salle"
+            desc="Module en cours de préparation pour le travail d'équipe sur grand terrain."
+          />
+
+          <div className="mt-8 rounded-[22px] border-2 border-dashed border-line p-10 text-center">
+            <Icon name="construction" size={38} className="mx-auto text-court" />
+            <h3 className="display mt-4 text-[26px] text-ink">Prochainement disponible</h3>
+            <p className="mx-auto mt-2 max-w-sm text-[16px] text-soft">Les ateliers tactiques en gymnase seront ajoutés très bientôt.</p>
+            <button type="button" onClick={() => onNavigate('home-exercises')} className="btn btn-ghost mt-6">
+              <Icon name="house" size={17} /> Voir les exercices maison
+            </button>
+          </div>
+        </main>
+      );
+    }
+
+    // --- PAGE : À PROPOS ---
+    function AboutPage({ onBack, onNavigateLegal }) {
+      return (
+        <main className="mx-auto max-w-[760px] px-5 py-6 sm:px-8 sm:py-10">
+          <BackButton onClick={onBack}>Accueil</BackButton>
+
+          <PageHeader eyebrow="À propos de l'application" title="Kin-Ball Trainer Pro" />
+
+          <div className="mt-8 space-y-5">
+            <section className="card p-6 sm:p-7">
+              <h2 className="display text-[24px] text-ink">Notre mission</h2>
+              <p className="mt-3 text-[16px] text-soft">
+                Kin-Ball Trainer est un outil développé pour accompagner les joueurs de Kin-Ball de tous niveaux dans l'amélioration de leur réactivité, leur explosivité et leur prise d'information visuelle et sonore.
+              </p>
+            </section>
+
+            <section className="card p-6 sm:p-7">
+              <h2 className="display text-[24px] text-ink">Les créateurs</h2>
+              <p className="mt-3 text-[16px] text-soft">
+                Projet conçu avec passion par des joueurs et entraîneurs passionnés par la discipline, désireux d'apporter des outils modernes et accessibles à l'entraînement individuel et collectif.
+              </p>
+            </section>
+
+            <section className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+              <div>
+                <h2 className="display text-[24px] text-ink">Mentions légales & CGU</h2>
+                <p className="mt-2 text-[15px] text-soft">Informations réglementaires, crédits et règles de traitement des données.</p>
+              </div>
+              <button type="button" onClick={onNavigateLegal} className="btn btn-ghost shrink-0">
+                Consulter <Icon name="arrow-right" size={17} />
+              </button>
+            </section>
+
+            {/* PROTECTION DROITS D'AUTEUR & NON-REPRODUCTION */}
+            <section className="warn p-6 sm:p-7">
+              <h2 className="display flex items-center gap-2.5 text-[24px]">
+                <Icon name="shield-alert" size={22} /> Protection & non-reproduction
+              </h2>
+              <p className="mt-3 text-[15px] font-medium">
+                Toute reproduction, copie, décompilation, modification ou réutilisation intégrale ou partielle de cette application, de son code source, de ses algorithmes, graphismes ou contenus sans l'autorisation écrite explicite de ses concepteurs est strictement interdite. Les droits d'auteur et la propriété intellectuelle liés à ce projet sont protégés par la loi.
+              </p>
+              <p className="mt-4 pt-4 text-[15px] font-bold" style={{ borderTop: '1px solid var(--warn-border)' }}>
+                © 2026 KLP (Key Lime Pie). Tous droits réservés.<br />
+                © 2026 TKLP (Team Key Lime Pie). Tous droits réservés.
+              </p>
+            </section>
+          </div>
+        </main>
+      );
+    }
+
+    // --- PAGE : MENTIONS LÉGALES ---
+    function LegalPage({ onBack }) {
+      const items = [
+        { title: 'Édition de l\'application', text: 'L\'application Kin-Ball Trainer est un projet indépendant conçu pour la communauté des joueurs de Kin-Ball.' },
+        { title: 'Propriété intellectuelle', text: 'Les illustrations, logos, codes et contenus applicatifs sont protégés. « Omnikin » et « Kin-Ball » sont des marques déposées par leurs propriétaires respectifs. Cette application vise à promouvoir la pratique sportive de manière ludique et éducative.' },
+        { title: 'Droits d\'auteur', text: '© 2026 KLP (Key Lime Pie). Tous droits réservés. © 2026 TKLP (Team Key Lime Pie). Tous droits réservés.' },
+        { title: 'Données personnelles & RGPD', text: 'Aucune donnée personnelle de suivi ou de géolocalisation n\'est collectée. Les paramètres de session d\'entraînement et le choix du thème restent stockés localement sur le navigateur de l\'utilisateur.' },
+        { title: 'Hébergement & technologies', text: 'Application web hébergée via un serveur web standard. Utilise React, Tailwind CSS et Lucide Icons sous licences open-source.' },
+      ];
+
+      return (
+        <main className="mx-auto max-w-[760px] px-5 py-6 sm:px-8 sm:py-10">
+          <BackButton onClick={onBack}>À propos</BackButton>
+
+          <PageHeader eyebrow="Informations réglementaires" title="Mentions légales" />
+
+          <div className="mt-8 space-y-5">
+            {items.map((it) => (
+              <section key={it.title} className="card p-6 sm:p-7">
+                <h2 className="display text-[22px] text-ink">{it.title}</h2>
+                <p className="mt-3 text-[16px] text-soft">{it.text}</p>
+              </section>
+            ))}
+          </div>
+        </main>
+      );
+    }
+
+    // --- GUIDE DES DISTANCES ---
+    function DemoScreen({ exercise, onSelectExercise, onBack, onNavigate }) {
+      const ex = EXERCISES[exercise];
+      const [difficulty, setDifficulty] = useState('niveau2');
+      const currentLevel = DIFFICULTY_LEVELS[difficulty];
+
+      return (
+        <main className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 sm:py-10">
+          <BackButton onClick={onBack}>Accueil</BackButton>
+          <TrainTabs screen="demo" onNavigate={onNavigate} />
+
+          <PageHeader
+            eyebrow="Démonstration & tactique"
+            title="Guide des distances"
+            desc="Adapte ton parcours à l'espace que tu as : salon, jardin ou gymnase."
+          />
+
+          <div className="mt-8">
+            <p className="eyebrow mb-3">1. Choisis l'exercice</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(EXERCISES).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onSelectExercise(id)}
+                  aria-pressed={exercise === id}
+                  className={`min-h-[44px] rounded-full border px-4 text-[15px] font-semibold transition-colors ${exercise === id ? 'border-court bg-court text-onaccent' : 'border-line bg-surface text-soft hover:border-court hover:text-ink'}`}
+                >
+                  {EXERCISES[id].name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <section className="card space-y-5 p-5 sm:p-6">
+              <p className="eyebrow">2. Choisis ta distance de travail</p>
+              <LevelPicker value={difficulty} onChange={setDifficulty} />
+              <CourtAnimation exerciseId={exercise} difficultyLevel={difficulty} />
+            </section>
+
+            <div className="space-y-6">
+              <section className="card p-6">
+                <p className="eyebrow">Impact physique</p>
+                <h3 className="display mt-2 text-[24px] text-ink">{currentLevel.badge}</h3>
+                <p className="mt-3 text-[15px] text-soft">{currentLevel.description}</p>
+                <p className="mt-4 rounded-2xl bg-surface2 p-4 text-[15px] text-ink">
+                  <strong className="text-courtdeep">Objectif athlétique : </strong>{currentLevel.objective}
+                </p>
+              </section>
+
+              <section className="card p-6">
+                <p className="eyebrow">Séquence de déplacement</p>
+                <h3 className="display mt-2 text-[24px] text-ink">{ex.name}</h3>
+                <p className="mb-5 mt-2 text-[15px] text-soft">{ex.description}</p>
+                <StepList steps={ex.steps} />
+              </section>
+
+              <section className="tip p-5">
+                <p className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wider">
+                  <Icon name="lightbulb" size={16} /> Clef tactique pour {currentLevel.distanceShort}
+                </p>
+                <p className="mt-2 text-[15px] font-medium">{ex.advice}</p>
+              </section>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    // --- SHELL GLOBAL (navigation) ---
+    function Shell({ children, screen, onNavigate, onGoHome, theme, onToggleTheme }) {
+      const groups = [
+        {
+          label: 'S\'entraîner',
+          items: [
+            { id: 'home', label: 'Accueil', icon: 'layout-grid' },
+            { id: 'home-exercises', label: 'Exercices maison', icon: 'house' },
+            { id: 'warmup', label: 'Échauffement', icon: 'flame' },
+            { id: 'gym-exercises', label: 'Exercices salle', icon: 'dumbbell' },
+            { id: 'demo', label: 'Guide des distances', icon: 'crosshair' },
+          ],
+        },
+        {
+          label: 'Infos',
+          items: [
+            { id: 'about', label: 'À propos', icon: 'info' },
+            { id: 'legal', label: 'Mentions légales', icon: 'file-text' },
+          ],
+        },
+      ];
+
+      const tabs = [
+        { id: 'home', label: 'Accueil', icon: 'layout-grid', match: ['home'] },
+        { id: 'home-exercises', label: 'Exercices', icon: 'zap', match: ['home-exercises', 'exercise-detail', 'gym-exercises', 'demo'] },
+        { id: 'warmup', label: 'Échauffement', icon: 'flame', match: ['warmup'] },
+        { id: 'about', label: 'Infos', icon: 'info', match: ['about', 'legal'] },
+      ];
+
+      // Écrans plein écran : pas de navigation autour
+      if (screen === 'training' || screen === 'training-done' || screen === 'warmup-timer') {
+        return <>{children}</>;
+      }
+
+      const isActive = (id) => screen === id || (screen === 'exercise-detail' && id === 'home-exercises');
+
+      return (
+        <div className="min-h-[100dvh] bg-bg text-ink">
+          {/* BARRE LATÉRALE (ordinateur) */}
+          <aside className="fixed inset-y-0 left-0 z-30 hidden w-[256px] flex-col border-r border-white/5 bg-night px-5 py-7 lg:flex">
+            <BrandLockup onClick={onGoHome} />
+            <nav className="mt-10 flex-1 space-y-8" aria-label="Navigation principale">
+              {groups.map((g) => (
+                <div key={g.label}>
+                  <p className="px-3 text-[12px] font-bold uppercase tracking-[.14em] text-onnightsoft">{g.label}</p>
+                  <div className="mt-2.5 space-y-1">
+                    {g.items.map(({ id, label, icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => onNavigate(id)}
+                        aria-current={isActive(id) ? 'page' : undefined}
+                        className={`flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-semibold transition-colors ${isActive(id) ? 'bg-court text-onaccent' : 'text-onnightsoft hover:bg-white/10 hover:text-onnight'}`}
+                      >
+                        <Icon name={icon} size={18} strokeWidth={2.2} />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </nav>
+            <p className="px-3 text-[12px] leading-relaxed text-onnightsoft">
+              © 2026 KLP (Key Lime Pie)<br />© 2026 TKLP (Team Key Lime Pie)<br />Tous droits réservés.
+            </p>
+          </aside>
+
+          <div className="with-tabbar lg:pl-[256px]">
+            {/* BARRE DU HAUT */}
+            <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-line bg-bg px-5 py-3 sm:px-8">
+              <div className="lg:hidden">
+                <BrandLockup compact onClick={onGoHome} />
+              </div>
+              <div className="ml-auto flex items-center gap-2.5">
+                <LanguageSelector />
+                <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+              </div>
+            </header>
+
+            {children}
+            <Copyright />
+          </div>
+
+          {/* BARRE D'ONGLETS (téléphone) */}
+          <nav className="tabbar fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface lg:hidden" aria-label="Navigation principale">
+            <div className="mx-auto grid max-w-[520px] grid-cols-4">
+              {tabs.map((t) => {
+                const active = t.match.includes(screen);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => onNavigate(t.id)}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex min-h-[64px] flex-col items-center justify-center gap-1 text-[12px] font-semibold transition-colors ${active ? 'text-courtdeep' : 'text-soft'}`}
+                  >
+                    <span className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${active ? 'bg-court text-onaccent' : ''}`}>
+                      <Icon name={t.icon} size={19} />
+                    </span>
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+      );
+    }
+
+    // --- LISTE DES EXERCICES MAISON ---
+    function HomeExercisesListScreen({ onSelectExercise, onBackHome, onNavigate }) {
+      const exerciseIds = Object.keys(EXERCISES);
+
+      return (
+        <main className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 sm:py-10">
+          <BackButton onClick={onBackHome}>Accueil</BackButton>
+          <TrainTabs screen="home-exercises" onNavigate={onNavigate} />
+
+          <PageHeader
+            eyebrow="Espace réactivité & solo"
+            title={<>Exercices <span className="text-court">maison</span></>}
+            desc="Choisis un exercice : tu règles ta séance, tu regardes la démo, et tu lances."
+          />
+
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            {exerciseIds.map((id, index) => {
+              const ex = EXERCISES[id];
+              return (
+                <button key={id} type="button" onClick={() => onSelectExercise(id)} className="card card-link group flex flex-col p-6">
+                  <div className="flex items-start justify-between">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface2 text-courtdeep transition-colors group-hover:bg-court group-hover:text-onaccent">
+                      <Icon name={ex.icon || "zap"} size={23} />
+                    </span>
+                    <span className="tnum display text-[22px] text-soft opacity-50">{String(index + 1).padStart(2, '0')}</span>
+                  </div>
+                  <p className="mt-5 text-[12px] font-bold uppercase tracking-[.14em] text-courtdeep">{ex.eyebrow}</p>
+                  <h2 className="display mt-1.5 text-[28px] text-ink">{ex.name}</h2>
+                  <p className="mt-2 flex-1 text-[16px] text-soft">{ex.short}</p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-[15px] font-bold text-courtdeep">
+                    Configurer & lancer <Icon name="arrow-right" size={17} className="transition-transform group-hover:translate-x-1" />
+                  </span>
+                </button>
+              );
+            })}
+
+            <button type="button" onClick={() => onNavigate('demo')} className="card card-link flex flex-col !border-court !bg-night p-6">
+              <CoatiVector size="w-16 h-16" className="self-start" />
+              <p className="mt-4 text-[12px] font-bold uppercase tracking-[.14em] text-sun">Visualisation interactive</p>
+              <h2 className="display mt-1.5 text-[28px] text-onnight">Besoin de régler tes distances ?</h2>
+              <p className="mt-2 flex-1 text-[16px] text-onnightsoft">Le guide t'aide à adapter tes parcours à l'espace disponible et à optimiser tes appuis.</p>
+              <span className="mt-5 inline-flex items-center gap-2 text-[15px] font-bold text-sun">
+                Ouvrir le guide des distances <Icon name="arrow-right" size={17} />
+              </span>
+            </button>
+          </div>
+        </main>
+      );
+    }
+
+    // --- PAGE D'UN EXERCICE (CONFIG + DÉMO) ---
+    function ExerciseDetailConfigScreen({ exerciseId, config, onUpdateConfig, onStart, onBack }) {
+      const ex = EXERCISES[exerciseId];
+      if (!ex) return null;
+
+      const activeColors = config.colors || ['BLEU', 'GRIS', 'NOIR'];
+      const level = DIFFICULTY_LEVELS[config.level || 'niveau1'];
+
+      const toggleColor = (colorId) => {
+        if (activeColors.includes(colorId)) {
+          if (activeColors.length > 1) {
+            onUpdateConfig({ colors: activeColors.filter(c => c !== colorId) });
+          }
+        } else {
+          onUpdateConfig({ colors: [...activeColors, colorId] });
+        }
+      };
+
+      return (
+        <main className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 sm:py-10">
+          <BackButton onClick={onBack}>Exercices maison</BackButton>
+
+          <PageHeader eyebrow={ex.eyebrow} title={ex.name} desc={ex.description} right={<CoatiVector size="w-20 h-20" className="hidden sm:flex" />} />
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            {/* COLONNE 1 : COMPRENDRE */}
+            <div className="space-y-6">
+              <section className="card space-y-5 p-5 sm:p-6">
+                <p className="eyebrow">1. Distance & terrain</p>
+                <LevelPicker value={config.level || 'niveau1'} onChange={(lvl) => onUpdateConfig({ level: lvl })} />
+                <CourtAnimation exerciseId={exerciseId} difficultyLevel={config.level || 'niveau1'} />
+              </section>
+
+              <section className="card p-5 sm:p-6">
+                <p className="eyebrow mb-5">2. Comment ça se passe</p>
+                <StepList steps={ex.steps} />
+              </section>
+
+              <section className="tip p-5">
+                <p className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wider">
+                  <Icon name="lightbulb" size={16} /> Conseil
+                </p>
+                <p className="mt-2 text-[15px] font-medium">{ex.advice}</p>
+              </section>
+            </div>
+
+            {/* COLONNE 2 : RÉGLER */}
+            <div className="space-y-6">
+              <section className="card divide-y divide-line p-5 sm:p-6">
+                <p className="eyebrow pb-5">3. Réglages de la séance</p>
+
+                {exerciseId === 'reactivity-selective' && (
+                  <div className="py-5">
+                    <p className="text-[15px] font-medium text-ink">Ta couleur</p>
+                    <p className="text-[14px] text-soft">Tu ne bouges que quand elle est annoncée.</p>
+                    <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Ta couleur">
+                      {ALL_SIGNALS.map((sig) => {
+                        const isSelected = (config.playerColor || 'BLEU') === sig.id;
+                        return (
+                          <button
+                            key={sig.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            onClick={() => onUpdateConfig({ playerColor: sig.id })}
+                            className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-xl border-2 text-[15px] font-bold text-white transition-all ${isSelected ? 'border-sun' : 'border-transparent opacity-50'}`}
+                            style={{ backgroundColor: sig.hex }}
+                          >
+                            {isSelected && <Icon name="check" size={16} strokeWidth={3} />} {sig.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="py-5">
+                  <Slider label="Durée totale d'effort" display={formatDuration(config.work)} min={15} max={180} step={5} value={config.work} onChange={(v) => onUpdateConfig({ work: v })} />
+                </div>
+
+                {exerciseId !== 'reactivity-selective' && (
+                  <div className="space-y-4 py-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[15px] font-medium text-ink">Temps entre deux appels</p>
+                      <div className="inline-flex rounded-xl border border-line bg-surface2 p-1" role="radiogroup" aria-label="Type d'intervalle">
+                        {[{ v: true, l: 'Aléatoire' }, { v: false, l: 'Fixe' }].map((o) => (
+                          <button
+                            key={o.l}
+                            type="button"
+                            role="radio"
+                            aria-checked={!!config.isRandomRest === o.v}
+                            onClick={() => onUpdateConfig({ isRandomRest: o.v })}
+                            className={`min-h-[36px] rounded-lg px-3 text-[14px] font-semibold transition-colors ${!!config.isRandomRest === o.v ? 'bg-court text-onaccent' : 'text-soft'}`}
+                          >
+                            {o.l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {config.isRandomRest ? (
+                      <>
+                        <Slider label="Repos minimum" display={`${config.restMin || 3} s`} min={2} max={10} value={config.restMin || 3} onChange={(v) => onUpdateConfig({ restMin: v, restMax: Math.max(v, config.restMax || 8) })} />
+                        <Slider label="Repos maximum" display={`${config.restMax || 8} s`} min={4} max={15} value={config.restMax || 8} onChange={(v) => onUpdateConfig({ restMax: v, restMin: Math.min(v, config.restMin || 3) })} />
+                      </>
+                    ) : (
+                      <Slider label="Repos fixe entre appels" display={`${config.restFixed || 4} s`} min={2} max={15} value={config.restFixed || 4} onChange={(v) => onUpdateConfig({ restFixed: v })} />
+                    )}
+                  </div>
+                )}
+
+                {exerciseId === 'reactivity-selective' && (
+                  <div className="space-y-4 py-5">
+                    <p className="text-[15px] font-medium text-ink">Intervalle dynamique</p>
+                    <Slider label="Temps de course (ta couleur)" display={`${config.restMax || 6} s`} min={3} max={10} value={config.restMax || 6} onChange={(v) => onUpdateConfig({ restMax: v })} />
+                    <Slider label="Temps piège (autre couleur)" display={`${config.shortRest || 1.5} s`} min={1} max={3} step={0.5} value={config.shortRest || 1.5} onChange={(v) => onUpdateConfig({ shortRest: v })} />
+                  </div>
+                )}
+
+                <div className="py-5">
+                  <p className="text-[15px] font-medium text-ink">Couleurs en jeu</p>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {ALL_SIGNALS.map((sig) => {
+                      const active = activeColors.includes(sig.id);
+                      return (
+                        <button
+                          key={sig.id}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => toggleColor(sig.id)}
+                          className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-xl border text-[15px] font-bold transition-all ${active ? 'border-transparent text-white' : 'border-line bg-surface2 text-soft line-through'}`}
+                          style={active ? { backgroundColor: sig.hex } : {}}
+                        >
+                          {active && <Icon name="check" size={16} strokeWidth={3} />} {sig.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-5">
+                  <Slider label="Décompte de départ" display={`${config.countdown || 3} s`} min={1} max={10} value={config.countdown || 3} onChange={(v) => onUpdateConfig({ countdown: v })} />
+                </div>
+              </section>
+            </div>
+          </div>
+
+          {/* LANCEMENT : toujours visible en bas d'écran */}
+          <div className="sticky bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 mt-8 lg:bottom-5">
+            <div className="flex flex-col gap-3 rounded-[22px] border border-court bg-night p-4 shadow-2xl sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <p className="tnum px-1 text-[15px] text-onnightsoft">
+                <strong className="text-onnight">{formatDuration(config.work)}</strong> d'effort · {activeColors.length} couleur{activeColors.length > 1 ? 's' : ''} · {level.short} ({level.distanceShort})
+              </p>
+              <button type="button" onClick={onStart} className="btn btn-primary !min-h-[54px] !px-7 !text-[17px]">
+                <Icon name="play" size={19} fill="currentColor" /> Démarrer l'entraînement
+              </button>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    // --- ÉCRAN D'ENTRAÎNEMENT ---
+    function TrainingScreen({ exercise, work, phase, signals, direction, sessionLeft, restLeft, signalCount, countdownNum, onStop }) {
+      const detail = EXERCISES[exercise];
+      const progress = Math.max(0, Math.min(100, ((work - sessionLeft) / work) * 100));
+
+      let bgStyle = { backgroundColor: '#172235' };
+      let isMultiColor = false;
+
+      if (phase === 'signal' && signals.length > 0) {
+        if (signals.length === 1) {
+          bgStyle = { backgroundColor: signals[0].hex };
+        } else if (signals.length > 1) {
+          isMultiColor = true;
+        }
+      }
+
+      return (
+        <main className="relative flex min-h-[100dvh] w-full select-none flex-col justify-between overflow-hidden transition-colors duration-300" style={!isMultiColor ? bgStyle : {}}>
+          {isMultiColor && (
+            <div className="absolute inset-0 z-0 flex flex-col sm:flex-row">
+              <div className="flex-1" style={{ backgroundColor: signals[0].hex }} />
+              <div className="flex-1 border-t-4 border-white/20 sm:border-l-4 sm:border-t-0" style={{ backgroundColor: signals[1].hex }} />
+            </div>
+          )}
+
+          <div className="relative z-10 flex items-center justify-between gap-3 border-b border-white/10 bg-black/40 p-4 text-white backdrop-blur-md sm:px-6">
+            <button type="button" onClick={onStop} className="btn btn-night">
+              <Icon name="x" size={18} /> Quitter
+            </button>
+
+            <div className="min-w-0 text-center">
+              <span className="block truncate text-[13px] font-semibold uppercase tracking-[.12em] text-white/70">{detail.name}</span>
+              <span className="tnum text-[15px] font-bold text-[#f4c52d]">{signalCount > 0 ? `Séquence ${signalCount}` : 'Prêt ?'}</span>
+            </div>
+
+            <div className="tnum display rounded-xl border border-white/10 bg-black/30 px-3.5 py-1.5 text-[30px] text-white" aria-label="Temps restant">
+              {formatDuration(sessionLeft)}
+            </div>
+          </div>
+
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 text-center">
+            {phase === 'ready' && (
+              <div className="animate-fadeIn max-w-lg rounded-[28px] border border-white/10 bg-black/50 p-8 backdrop-blur-md sm:p-10">
+                <span className="text-[13px] font-bold uppercase tracking-[.14em] text-[#f4c52d]">Mise en place</span>
+                <h1 className="display mt-3 text-[40px] text-white sm:text-[56px]">Attention, en position</h1>
+                {countdownNum !== null && (
+                  <div className="tnum display mt-4 text-[120px] leading-none text-[#f4c52d]">{countdownNum}</div>
+                )}
+              </div>
+            )}
+
+            {phase === 'rest' && (
+              <div className="rounded-[28px] border border-white/10 bg-black/50 p-8 backdrop-blur-md sm:p-10">
+                <span className="text-[13px] font-bold uppercase tracking-[.14em] text-[#f4c52d]">Replace-toi au centre</span>
+                <h2 className="display mt-3 text-[40px] text-white sm:text-[56px]">Prochain appel</h2>
+                <div className="tnum display mt-3 text-[80px] leading-none text-white/90">{restLeft}<span className="text-[36px]">s</span></div>
+              </div>
+            )}
+
+            {phase === 'signal' && (
+              <div className="pointer-events-none w-full max-w-4xl px-4">
+                {exercise === 'reactivity-selective' ? (
+                  <div className="animate-scaleIn space-y-3">
+                    <span className="display block text-[48px] text-[#f4c52d] drop-shadow-md sm:text-[72px]">{direction}</span>
+                    <h1 className="display text-[80px] tracking-wide text-white drop-shadow-2xl sm:text-[130px]">{signals[0].name}</h1>
+                  </div>
+                ) : signals.length === 1 ? (
+                  <h1 className="animate-scaleIn display text-[100px] tracking-wide text-white drop-shadow-2xl sm:text-[170px]">{signals[0].name}</h1>
+                ) : (
+                  <div className="animate-scaleIn flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-10">
+                    <div className="rounded-[28px] border border-white/20 bg-black/40 px-8 py-5 shadow-2xl backdrop-blur-md">
+                      <span className="block text-[13px] font-bold uppercase tracking-wider text-white/70">1re couleur</span>
+                      <span className="display text-[64px] text-white sm:text-[88px]">{signals[0].name}</span>
+                    </div>
+                    <span className="display rounded-2xl border border-white/20 bg-black/60 px-4 py-2 text-[32px] text-[#f4c52d]">Omnikin</span>
+                    <div className="rounded-[28px] border border-white/20 bg-black/40 px-8 py-5 shadow-2xl backdrop-blur-md">
+                      <span className="block text-[13px] font-bold uppercase tracking-wider text-white/70">2e couleur</span>
+                      <span className="display text-[64px] text-white sm:text-[88px]">{signals[1].name}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="relative z-10 border-t border-white/10 bg-black/40 p-4 backdrop-blur-md sm:px-6" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}>
+            <div className="mx-auto max-w-xl">
+              <div className="tnum mb-2 flex justify-between text-[14px] font-bold text-white/80">
+                <span>Progression</span>
+                <span>{Math.round(progress)} %</span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
+                <div className="h-full rounded-full bg-[#f4c52d] transition-all duration-300" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    // --- FIN DE SÉANCE ---
+    function TrainingDoneScreen({ result, onRestart, onBack }) {
+      const detail = EXERCISES[result.exercise];
+      return (
+        <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#172235] px-6 py-10 text-center text-white">
+          <CoatiVector size="w-32 h-32" className="mb-5" />
+          <p className="text-[13px] font-bold uppercase tracking-[.14em] text-white/60">{detail.name}</p>
+          <h1 className="display mt-2 text-[52px] text-[#f4c52d]">Séance terminée !</h1>
+
+          <div className="mt-7 grid w-full max-w-sm grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="tnum display text-[40px] text-white">{formatDuration(result.work)}</div>
+              <div className="text-[14px] text-white/60">d'effort</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="tnum display text-[40px] text-white">{result.sequences}</div>
+              <div className="text-[14px] text-white/60">séquence{result.sequences > 1 ? 's' : ''}</div>
+            </div>
+          </div>
+
+          <div className="mt-8 flex w-full max-w-sm flex-col gap-3">
+            <button type="button" onClick={onRestart} className="btn btn-primary !min-h-[54px] !text-[17px]">
+              <Icon name="rotate-ccw" size={18} /> Recommencer
+            </button>
+            <button type="button" onClick={onBack} className="btn btn-night">Retour aux exercices</button>
+          </div>
+        </main>
+      );
+    }
+
+    // --- APPLICATION PRINCIPALE ---
+    function App() {
+      const [theme, toggleTheme] = useTheme();
+      const [screen, setScreen] = useState('home');
+      const [selectedExercise, setSelectedExercise] = useState('appel');
+      const [settings, setSettings] = useState(loadSettings);
+      const [activeSession, setActiveSession] = useState(null);
+      const [lastResult, setLastResult] = useState(null);
+      const [phase, setPhase] = useState('ready');
+      const [signals, setSignals] = useState([]);
+      const [direction, setDirection] = useState('');
+      const [sequenceCount, setSequenceCount] = useState(0);
+      const [sessionLeft, setSessionLeft] = useState(60);
+      const [restLeft, setRestLeft] = useState(0);
+      const [countdownNum, setCountdownNum] = useState(null);
+      const [sessionEndAt, setSessionEndAt] = useState(null);
+      const [nextSignalAt, setNextSignalAt] = useState(null);
+      const [restDeadline, setRestDeadline] = useState(null);
+      const [now, setNow] = useState(Date.now());
+      const lastSignalRef = useRef(null);
+      const audioCtxRef = useRef(null);
+      const signalTimeoutRef = useRef(null);
+
+      const handleNavigate = (targetScreen) => {
+        setScreen(targetScreen);
+        window.scrollTo(0, 0);
+      };
+
+      // Réglages mémorisés sur l'appareil
+      useEffect(() => {
+        try { localStorage.setItem('knt-settings', JSON.stringify(settings)); } catch (e) {}
+      }, [settings]);
+
+      // Garde l'écran allumé pendant une séance (si le navigateur le permet)
+      useEffect(() => {
+        if (screen !== 'training' && screen !== 'warmup-timer') return;
+        let lock = null;
+        let cancelled = false;
+        if ('wakeLock' in navigator) {
+          navigator.wakeLock.request('screen').then((l) => {
+            if (cancelled) l.release().catch(() => {}); else lock = l;
+          }).catch(() => {});
+        }
+        return () => {
+          cancelled = true;
+          if (lock) lock.release().catch(() => {});
+        };
+      }, [screen]);
+
+      const speak = useCallback((text) => {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 1.3;
+        window.speechSynthesis.speak(utterance);
+      }, []);
+
+      const playBeep = useCallback((freq = 440, duration = 0.15) => {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+          const ctx = audioCtxRef.current;
+          if (ctx.state === 'suspended') ctx.resume();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + duration);
+        } catch (e) {
+          console.log('Audio Context Error:', e);
+        }
+      }, []);
+
+      const stopSpeech = useCallback(() => {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      }, []);
+
+      const getActiveSignalsList = useCallback((config) => {
+        const allowedIds = config.colors || ['BLEU', 'GRIS', 'NOIR'];
+        return ALL_SIGNALS.filter(s => allowedIds.includes(s.id));
+      }, []);
+
+      const triggerSequence = useCallback((timestamp, config) => {
+        const availableSignals = getActiveSignalsList(config);
+        if (availableSignals.length === 0) return;
+
+        let nextSignals;
+        let chosenDirection = '';
+
+        if (config.exercise === 'double' && availableSignals.length > 1) {
+          const first = Math.floor(Math.random() * availableSignals.length);
+          let second = Math.floor(Math.random() * availableSignals.length);
+          while (second === first) second = Math.floor(Math.random() * availableSignals.length);
+          nextSignals = [availableSignals[first], availableSignals[second]];
+        } else {
+          let chosen;
+          const preventConsecutive = config.preventConsecutiveColors ?? true;
+          if (preventConsecutive && lastSignalRef.current && availableSignals.length > 1) {
+            const filtered = availableSignals.filter(s => s.id !== lastSignalRef.current.id);
+            chosen = filtered[Math.floor(Math.random() * filtered.length)];
+          } else {
+            chosen = availableSignals[Math.floor(Math.random() * availableSignals.length)];
+          }
+          lastSignalRef.current = chosen;
+          nextSignals = [chosen];
+        }
+
+        let calculatedRest = config.restFixed || 4;
+
+        if (config.exercise === 'reactivity-selective') {
+          chosenDirection = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+          setDirection(chosenDirection);
+
+          const isPlayerColor = nextSignals[0].id === (config.playerColor || 'BLEU');
+
+          if (isPlayerColor) {
+            calculatedRest = config.restMax || 6;
+          } else {
+            calculatedRest = config.shortRest || 1.5;
+          }
+        } else if (config.isRandomRest && config.restMin && config.restMax) {
+          const lo = Math.min(config.restMin, config.restMax);
+          const hi = Math.max(config.restMin, config.restMax);
+          calculatedRest = Math.floor(Math.random() * (hi - lo + 1)) + lo;
+        }
+
+        setSignals(nextSignals);
+        setSequenceCount((v) => v + 1);
+        setPhase('signal');
+        setRestLeft(calculatedRest);
+        setRestDeadline(timestamp + calculatedRest * 1000);
+
+        if (config.exercise === 'reactivity-selective') {
+          speak(`${chosenDirection}, Omnikin ${nextSignals[0].name}`);
+        } else if (config.exercise === 'double' && nextSignals[1]) {
+          speak(`${nextSignals[0].name}, Omnikin ${nextSignals[1].name}`);
+        } else if (config.exercise === 'plot-sprint') {
+          speak(`Touche le plot, Omnikin ${nextSignals[0].name}`);
+        } else {
+          speak(`Omnikin ${nextSignals[0].name}`);
+        }
+
+        const displayTime = config.exercise === 'reactivity-selective' ? 1200 : 2500;
+        clearTimeout(signalTimeoutRef.current);
+        signalTimeoutRef.current = setTimeout(() => {
+          setPhase('rest');
+        }, Math.min(displayTime, calculatedRest * 1000));
+
+      }, [speak, getActiveSignalsList]);
+
+      useEffect(() => {
+        if (screen !== 'training' || !sessionEndAt) return;
+        const interval = setInterval(() => setNow(Date.now()), 200);
+        return () => clearInterval(interval);
+      }, [screen, sessionEndAt]);
+
+      useEffect(() => {
+        if (screen !== 'training' || !sessionEndAt || !activeSession) return;
+        const remaining = Math.max(0, Math.ceil((sessionEndAt - now) / 1000));
+        setSessionLeft(remaining);
+
+        if (remaining <= 0) {
+          clearTimeout(signalTimeoutRef.current);
+          stopSpeech();
+          playBeep(660, 0.5);
+          setLastResult({ exercise: activeSession.exercise, work: activeSession.work, sequences: sequenceCount });
+          setSessionEndAt(null);
+          setActiveSession(null);
+          handleNavigate('training-done');
+          return;
+        }
+
+        if (phase === 'ready' && nextSignalAt) {
+          const diffSec = Math.ceil((nextSignalAt - now) / 1000);
+          if (diffSec > 0 && diffSec <= 3 && diffSec !== countdownNum) {
+            setCountdownNum(diffSec);
+            playBeep(520, 0.12);
+          } else if (diffSec > 3 && diffSec !== countdownNum) {
+            setCountdownNum(diffSec);
+          }
+
+          if (now >= nextSignalAt) {
+            playBeep(880, 0.3);
+            triggerSequence(now, activeSession);
+            setNextSignalAt(null);
+            setCountdownNum(null);
+          }
+        } else if (phase === 'rest' && restDeadline) {
+          const restRem = Math.max(0, Math.ceil((restDeadline - now) / 1000));
+          setRestLeft(restRem);
+          if (now >= restDeadline) {
+            triggerSequence(now, activeSession);
+          }
+        }
+      }, [now, screen, sessionEndAt, activeSession, phase, nextSignalAt, restDeadline, countdownNum, sequenceCount, triggerSequence, playBeep, stopSpeech]);
+
+      const startTraining = () => {
+        stopSpeech();
+        clearTimeout(signalTimeoutRef.current);
+        const config = { exercise: selectedExercise, ...settings[selectedExercise] };
+        const startedAt = Date.now();
+        const cd = (config.countdown || 3) * 1000;
+
+        lastSignalRef.current = null;
+        setActiveSession(config);
+        setSignals([]);
+        setDirection('');
+        setSequenceCount(0);
+        setPhase('ready');
+        setSessionLeft(config.work);
+        setRestLeft(0);
+        setCountdownNum(config.countdown || 3);
+        setSessionEndAt(startedAt + cd + config.work * 1000);
+        setNextSignalAt(startedAt + cd);
+        setRestDeadline(null);
+        setNow(startedAt);
+
+        speak("Attention, en position");
+
+        handleNavigate('training');
+      };
+
+      const stopTraining = () => {
+        stopSpeech();
+        clearTimeout(signalTimeoutRef.current);
+        setSessionEndAt(null);
+        setActiveSession(null);
+        handleNavigate('exercise-detail');
+      };
+
+      const goToHome = () => {
+        stopSpeech();
+        clearTimeout(signalTimeoutRef.current);
+        setSessionEndAt(null);
+        setActiveSession(null);
+        handleNavigate('home');
+      };
+
+      const updateConfigForExercise = (exId, newFields) => {
+        setSettings(prev => ({
+          ...prev,
+          [exId]: { ...prev[exId], ...newFields }
+        }));
+      };
+
+      return (
+        <Shell screen={screen} onNavigate={handleNavigate} onGoHome={goToHome} theme={theme} onToggleTheme={toggleTheme}>
+          {screen === 'home' && (
+            <HomeScreen onNavigate={handleNavigate} />
+          )}
+
+          {screen === 'home-exercises' && (
+            <HomeExercisesListScreen
+              onSelectExercise={(exId) => {
+                setSelectedExercise(exId);
+                handleNavigate('exercise-detail');
+              }}
+              onBackHome={goToHome}
+              onNavigate={handleNavigate}
+            />
+          )}
+
+          {screen === 'exercise-detail' && (
+            <ExerciseDetailConfigScreen
+              exerciseId={selectedExercise}
+              config={settings[selectedExercise]}
+              onUpdateConfig={(fields) => updateConfigForExercise(selectedExercise, fields)}
+              onStart={startTraining}
+              onBack={() => handleNavigate('home-exercises')}
+            />
+          )}
+
+          {screen === 'warmup' && (
+            <WarmupPage
+              onBack={goToHome}
+              onStart5MinWarmup={() => handleNavigate('warmup-timer')}
+            />
+          )}
+
+          {screen === 'warmup-timer' && (
+            <WarmupTimerScreen
+              onStop={() => handleNavigate('warmup')}
+              speak={speak}
+              stopSpeech={stopSpeech}
+            />
+          )}
+
+          {screen === 'gym-exercises' && (
+            <GymExercisesPage onBack={goToHome} onNavigate={handleNavigate} />
+          )}
+
+          {screen === 'about' && (
+            <AboutPage
+              onBack={goToHome}
+              onNavigateLegal={() => handleNavigate('legal')}
+            />
+          )}
+
+          {screen === 'legal' && (
+            <LegalPage onBack={() => handleNavigate('about')} />
+          )}
+
+          {screen === 'demo' && (
+            <DemoScreen
+              exercise={selectedExercise}
+              onSelectExercise={(ex) => setSelectedExercise(ex)}
+              onBack={goToHome}
+              onNavigate={handleNavigate}
+            />
+          )}
+
+          {screen === 'training' && activeSession && (
+            <TrainingScreen
+              exercise={activeSession.exercise}
+              work={activeSession.work}
+              phase={phase}
+              signals={signals}
+              direction={direction}
+              sessionLeft={sessionLeft}
+              restLeft={restLeft}
+              signalCount={sequenceCount}
+              countdownNum={countdownNum}
+              onStop={stopTraining}
+            />
+          )}
+
+          {screen === 'training-done' && lastResult && (
+            <TrainingDoneScreen
+              result={lastResult}
+              onRestart={startTraining}
+              onBack={() => handleNavigate('home-exercises')}
+            />
+          )}
+        </Shell>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
