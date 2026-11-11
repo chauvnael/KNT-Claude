@@ -1,5 +1,5 @@
 # KNT (Kin ball trainer)
-- [La page Web](https://floodfield-sudio.github.io/KNT/)
+- [La page Web](https://chauvnael.github.io/KNT-Claude/)
 
 Tous droits réservés KLP (Key Lime Pie)
 
